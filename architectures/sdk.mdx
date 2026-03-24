@@ -74,6 +74,41 @@ The SDK excels because it operates inside the agent runtime:
 
 ---
 
+## Real-World Example: mcp-observe
+
+The [mcp-observe](/guides/mcp-observe) SDK demonstrates the SDK/Instrumentation architecture. It monkey-patches LLM and MCP client libraries to intercept every tool invocation — exactly the pattern described above.
+
+<Tabs>
+  <Tab title="Python">
+```python
+import mcp_observe
+mcp_observe.init(api_key="tap_...")
+
+# Anthropic, OpenAI, Gemini, MCP client calls are now captured
+```
+  </Tab>
+  <Tab title="TypeScript">
+```typescript
+import { init } from "mcp-observe";
+init({ apiKey: "tap_..." });
+
+// Anthropic, OpenAI, Gemini, MCP client, Vercel AI calls are now captured
+```
+  </Tab>
+</Tabs>
+
+mcp-observe also supports **server-side instrumentation** (patching the MCP server rather than the client) and a **proxy CLI** that wraps any MCP server without code changes — bridging the SDK and [Gateway](/architectures/gateway) architectures.
+
+| Feature | AARM Component |
+|---------|---------------|
+| Client-side monkey-patching | SDK / Instrumentation (this pattern) |
+| Server-side `instrument_server()` | SDK applied at the tool layer |
+| Proxy CLI (`mcp-observe -- ...`) | [MCP Gateway](/patterns/mcp-gateway) pattern |
+| Sessions and traces | [Context Accumulator](/components/context-accumulator) |
+| Ed25519 receipt signing | [Receipts](/components/receipts) |
+
+---
+
 ## When to Use
 
 - You control the agent code and can modify it

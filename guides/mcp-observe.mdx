@@ -1,0 +1,283 @@
+---
+title: "mcp-observe SDK"
+description: "One-line observability for MCP tool calls — capture every LLM and tool invocation and stream it to a real-time dashboard."
+---
+
+## Overview
+
+[mcp-observe](https://github.com/Phytonking/mcp-monitoring) is an open-source SDK that captures every LLM and MCP tool call and streams events to a real-time dashboard. It implements key AARM telemetry and receipt concepts with a single line of code.
+
+Available as both a **Python** and **TypeScript/Node.js** package with zero runtime dependencies. Patches are silently skipped when a library isn't installed — your app is never affected.
+
+<CardGroup cols={2}>
+  <Card title="PyPI" icon="python" href="https://pypi.org/project/mcp-observe/">
+    `pip install mcp-observe`
+  </Card>
+  <Card title="npm" icon="npm" href="https://www.npmjs.com/package/mcp-observe">
+    `npm install mcp-observe`
+  </Card>
+</CardGroup>
+
+---
+
+## AARM Alignment
+
+mcp-observe maps directly to several AARM specification components:
+
+| AARM Component | mcp-observe Feature |
+|---------------|---------------------|
+| [Telemetry Exporter](/components/telemetry) | Streams structured events (tool name, arguments, result, token usage) to a centralized dashboard |
+| [Receipts](/components/receipts) | Supports Ed25519 cryptographic receipt signing via AARM (`signing_key_path` / `signingKeyPath`) |
+| [SDK / Instrumentation](/architectures/sdk) | Monkey-patches SDK calls at the application level — the SDK architecture pattern |
+| [MCP Gateway](/patterns/mcp-gateway) | Proxy CLI intercepts JSON-RPC `tools/call` messages on stdio — the gateway pattern |
+| [Context Accumulator](/components/context-accumulator) | Sessions and traces group related operations for contextual analysis |
+
+---
+
+## Quick Start
+
+### 1. Get Your API Key
+
+Create a free account at [app.themcp.company](https://app.themcp.company) to get your API key (starts with `tap_`).
+
+### 2. Install & Initialize
+
+<Tabs>
+  <Tab title="Python">
+```bash
+pip install mcp-observe
+```
+
+```python
+import mcp_observe
+mcp_observe.init(api_key="tap_...")
+
+# All supported SDK calls are now captured automatically.
+```
+  </Tab>
+  <Tab title="TypeScript / Node.js">
+```bash
+npm install mcp-observe
+```
+
+```typescript
+import { init } from "mcp-observe";
+init({ apiKey: "tap_..." });
+
+// All supported SDK calls are now captured automatically.
+```
+  </Tab>
+</Tabs>
+
+<Warning>
+Call `init()` **before** importing the SDK you want to instrument. mcp-observe works by patching library internals at import time.
+</Warning>
+
+---
+
+## Supported Providers
+
+### Python
+
+| Provider | What's Captured |
+|----------|----------------|
+| **Anthropic** (`anthropic`) | `messages.create` (sync + async) — model, system prompt, messages, response, thinking blocks, token usage |
+| **OpenAI** (`openai`) | `chat.completions.create` (sync + async) — model, messages, response, reasoning content, token usage |
+| **Google Gemini** (`google.genai`) | `generate_content` (sync + async + streaming) — model, contents, response, token usage |
+| **MCP** (`mcp`) | `ClientSession.call_tool` — tool name, arguments, result, errors |
+| **Composio** (`composio`) | `ComposioToolSet.execute_action` — action name, parameters, result |
+| **HTTP** (`httpx`, `urllib3`, `aiohttp`) | Requests to known AI API hosts (OpenAI, Anthropic, Gemini) |
+
+### TypeScript / Node.js
+
+| Provider | What's Captured |
+|----------|----------------|
+| **Anthropic** (`@anthropic-ai/sdk`) | `messages.create` — model, system prompt, messages, response, thinking blocks, token usage |
+| **OpenAI** (`openai`) | `chat.completions.create` — model, messages, response, reasoning content, token usage |
+| **Google Gemini** (`@google/genai`) | `generateContent` — model, contents, response, token usage |
+| **MCP** (`@modelcontextprotocol/sdk`) | `client.callTool` — tool name, arguments, result, errors |
+| **Composio** (`composio-core`) | `executeAction` — action name, parameters, result |
+| **Vercel AI** (`ai`) | `generateText` / `streamText` — model, messages, tool calls, token usage |
+
+---
+
+## Server-Side Instrumentation
+
+Instrument MCP servers directly to capture tool calls on the server side — useful when you don't control client code.
+
+### Python
+
+```python
+from mcp.server import Server
+import mcp_observe
+
+app = Server("my-server")
+mcp_observe.instrument_server(app, api_key="tap_...")
+```
+
+### TypeScript / Node.js
+
+```typescript
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { instrumentServer } from "mcp-observe";
+
+const server = new Server({ name: "my-server", version: "1.0.0" });
+instrumentServer(server, { apiKey: "tap_..." });
+```
+
+---
+
+## Proxy CLI (Gateway Pattern)
+
+Wrap any MCP server as a transparent proxy — no code changes needed. This implements the [MCP Gateway](/patterns/mcp-gateway) pattern by intercepting all JSON-RPC `tools/call` messages on stdio.
+
+### Python
+
+```bash
+mcp-observe --api-key tap_... -- python my_mcp_server.py
+```
+
+### Node.js
+
+```bash
+npx mcp-observe --api-key tap_... -- node my-mcp-server.js
+```
+
+The proxy captures tool calls and forwards everything unchanged to the downstream server.
+
+---
+
+## Sessions and Traces
+
+### Sessions
+
+Sessions group related events. They are detected automatically from conversation fingerprints, or set explicitly:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import mcp_observe
+
+with mcp_observe.session("my-workflow") as session_id:
+    response = client.messages.create(...)
+
+# Or manual start/end
+mcp_observe.start_session("my-workflow")
+# ... your code ...
+mcp_observe.end_session()
+```
+  </Tab>
+  <Tab title="TypeScript">
+```typescript
+import { session } from "mcp-observe";
+
+const result = await session("my-workflow", async () => {
+  const res = await client.messages.create({ ... });
+  return res;
+});
+```
+  </Tab>
+</Tabs>
+
+### Traces
+
+Group related operations across sessions with trace IDs:
+
+```python
+import mcp_observe
+
+trace_id = mcp_observe.start_trace()
+response = client.messages.create(...)
+mcp_observe.end_trace()
+```
+
+---
+
+## AARM Receipt Signing
+
+mcp-observe supports Ed25519 cryptographic receipt signing, aligned with AARM's [Receipt Generator](/components/receipts) specification. Provide a path to an Ed25519 private key PEM:
+
+<Tabs>
+  <Tab title="Python">
+```python
+mcp_observe.init(
+    api_key="tap_...",
+    signing_key_path="/path/to/ed25519-private.pem"
+)
+```
+
+Requires the optional `aarm` extra:
+
+```bash
+pip install mcp-observe[aarm]
+```
+  </Tab>
+  <Tab title="TypeScript">
+```typescript
+import { init } from "mcp-observe";
+
+init({
+  apiKey: "tap_...",
+  signingKeyPath: "/path/to/ed25519-private.pem",
+});
+```
+  </Tab>
+</Tabs>
+
+---
+
+## Configuration Reference
+
+### `init()` Parameters
+
+<Tabs>
+  <Tab title="Python">
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `api_key` | `str` | Your project API key (starts with `tap_`). Falls back to `MCP_OBSERVE_API_KEY` env var. |
+| `endpoint` | `str` | Custom endpoint URL. Falls back to `MCP_OBSERVE_ENDPOINT` env var. |
+| `user_id` | `str \| None` | User ID to tag events with. |
+| `signing_key_path` | `str \| None` | Path to Ed25519 private key PEM for AARM cryptographic receipts. |
+  </Tab>
+  <Tab title="TypeScript">
+| Option | Type | Description |
+|--------|------|-------------|
+| `apiKey` | `string` | **Required.** Your project API key (starts with `tap_`). Falls back to `MCP_OBSERVE_API_KEY` env var. |
+| `endpoint` | `string` | Custom endpoint URL. Falls back to `MCP_OBSERVE_ENDPOINT` env var. |
+| `userId` | `string \| null` | User ID to tag events with. |
+| `signingKeyPath` | `string` | Path to Ed25519 private key PEM for AARM cryptographic receipts. |
+  </Tab>
+</Tabs>
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `MCP_OBSERVE_API_KEY` | API key fallback (used when `api_key` / `apiKey` is not passed to `init()`) |
+| `MCP_OBSERVE_ENDPOINT` | Custom endpoint URL fallback |
+| `MCP_OBSERVE_DEBUG` | Set to any value to enable debug logging (TypeScript). For Python, use `logging.basicConfig(level=logging.DEBUG)`. |
+
+---
+
+## Dashboard
+
+Sign up at [app.themcp.company](https://app.themcp.company) to get your API key and view captured events in real time.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/guides/quickstart">
+    Build AARM enforcement patterns from scratch
+  </Card>
+  <Card title="SDK Architecture" icon="code" href="/architectures/sdk">
+    How SDK instrumentation fits into the AARM specification
+  </Card>
+  <Card title="MCP Gateway Pattern" icon="server" href="/patterns/mcp-gateway">
+    Network-level enforcement for MCP tools
+  </Card>
+  <Card title="Receipt Signing" icon="signature" href="/patterns/receipt-signing">
+    Cryptographic audit trails with Ed25519
+  </Card>
+</CardGroup>

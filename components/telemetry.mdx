@@ -341,6 +341,29 @@ telemetry:
 
 ---
 
+## Quick Start with mcp-observe
+
+For teams looking to add AARM-aligned telemetry capture with minimal effort, the [mcp-observe](/guides/mcp-observe) SDK provides one-line instrumentation. It automatically captures every LLM and MCP tool call and streams structured events to a real-time dashboard.
+
+<Tabs>
+  <Tab title="Python">
+```python
+import mcp_observe
+mcp_observe.init(api_key="tap_...")
+```
+  </Tab>
+  <Tab title="TypeScript">
+```typescript
+import { init } from "mcp-observe";
+init({ apiKey: "tap_..." });
+```
+  </Tab>
+</Tabs>
+
+mcp-observe captures tool name, arguments, results, errors, model info, and token usage — aligning with the telemetry event types described above. It also supports [sessions and traces](/guides/mcp-observe#sessions-and-traces) for grouping related events.
+
+---
+
 ## Ingestion via OpenTelemetry
 
 While this page covers exporting AARM events to external platforms, AARM can also **ingest** telemetry from agents that already emit OpenTelemetry data. Agent platforms like Claude Code natively export OTLP logs containing tool invocations, approval decisions, and session context.

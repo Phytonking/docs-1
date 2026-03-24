@@ -170,6 +170,39 @@ CREATE TABLE receipts (
 
 ---
 
+## Quick Start with mcp-observe
+
+The [mcp-observe](/guides/mcp-observe) SDK supports AARM-aligned Ed25519 receipt signing out of the box. Provide a signing key path when initializing:
+
+<Tabs>
+  <Tab title="Python">
+```python
+import mcp_observe
+
+mcp_observe.init(
+    api_key="tap_...",
+    signing_key_path="/path/to/ed25519-private.pem"
+)
+```
+
+Requires the optional `aarm` extra: `pip install mcp-observe[aarm]`
+  </Tab>
+  <Tab title="TypeScript">
+```typescript
+import { init } from "mcp-observe";
+
+init({
+  apiKey: "tap_...",
+  signingKeyPath: "/path/to/ed25519-private.pem",
+});
+```
+  </Tab>
+</Tabs>
+
+This enables cryptographic receipt generation for every captured tool call, using the same Ed25519 algorithm specified above.
+
+---
+
 ## Requirements
 
 | Requirement | Level |

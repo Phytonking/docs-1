@@ -11,6 +11,10 @@ This guide walks through implementing basic AARM patterns. By the end, you'll ha
 2. Action interception and evaluation
 3. Basic receipt generation
 
+<Tip>
+**Want observability first?** If you want to start capturing MCP tool calls immediately before building full enforcement, the [mcp-observe SDK](/guides/mcp-observe) provides one-line instrumentation with a real-time dashboard, session tracking, and AARM-aligned receipt signing.
+</Tip>
+
 ---
 
 ## Prerequisites
@@ -185,11 +189,14 @@ send(to="external@gmail.com", subject="Data", body="Customer list...")
 
 ## Next Steps
 
-<CardGroup cols={2}>
+<CardGroup cols={3}>
   <Card title="Write Your First Policy" icon="scale-balanced" href="/guides/first-policy">
     Deep dive into policy syntax and patterns
   </Card>
   <Card title="MCP Gateway Pattern" icon="server" href="/patterns/mcp-gateway">
     Network-level enforcement for MCP tools
+  </Card>
+  <Card title="mcp-observe SDK" icon="eye" href="/guides/mcp-observe">
+    One-line observability for MCP tool calls
   </Card>
 </CardGroup>

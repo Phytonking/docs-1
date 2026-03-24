@@ -88,7 +88,8 @@
             "group": "Getting Started",
             "pages": [
               "guides/quickstart",
-              "guides/first-policy"
+              "guides/first-policy",
+              "guides/mcp-observe"
             ]
           },
           {

@@ -191,6 +191,22 @@ spec:
 
 ---
 
+## Quick Start with mcp-observe Proxy CLI
+
+The [mcp-observe](/guides/mcp-observe) SDK includes a proxy CLI that implements the MCP Gateway pattern with zero code changes. It wraps any MCP server as a transparent stdio proxy, intercepting all JSON-RPC `tools/call` messages:
+
+```bash
+# Python
+mcp-observe --api-key tap_... -- python my_mcp_server.py
+
+# Node.js
+npx mcp-observe --api-key tap_... -- node my-mcp-server.js
+```
+
+The proxy captures tool name, arguments, and results for every call, then forwards everything unchanged to the downstream server. This provides immediate observability while you build out full AARM enforcement.
+
+---
+
 ## Next Steps
 
 <CardGroup cols={2}>
@@ -199,5 +215,8 @@ spec:
   </Card>
   <Card title="Receipt Signing" icon="signature" href="/patterns/receipt-signing">
     Cryptographic audit trails
+  </Card>
+  <Card title="mcp-observe SDK" icon="eye" href="/guides/mcp-observe">
+    One-line observability for MCP tool calls
   </Card>
 </CardGroup>
